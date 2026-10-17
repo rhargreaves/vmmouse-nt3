@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
     file \
     genisoimage \
-    python3 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 CMD ["make"]

@@ -23,11 +23,13 @@ LDFLAGS_SYS = /nologo \
               /base:0x10000 \
               /align:32 \
               /filealign:32 \
-              /tsaware:no \
               /nodefaultlib \
               /version:$(NT_VERSION) \
               /dynamicbase:no \
-              /nxcompat:no
+              /nxcompat:no \
+              /safeseh:no \
+              /tsaware:no \
+              /release
 
 LDFLAGS_EXE = /nologo \
               /subsystem:console,$(NT_VERSION) \
@@ -36,7 +38,10 @@ LDFLAGS_EXE = /nologo \
               /nodefaultlib \
               /version:$(NT_VERSION) \
               /dynamicbase:no \
-              /nxcompat:no
+              /nxcompat:no \
+              /safeseh:no \
+              /tsaware:no \
+              /release
 
 BUILD_DIR = build
 INSTDRV_BUILD_DIR = $(BUILD_DIR)/instdrv
@@ -84,11 +89,9 @@ $(VMMOUSE_BUILD_DIR)/%.lib: vmmouse/lib/%.def | $(VMMOUSE_BUILD_DIR)
 
 $(TARGET): $(VMMOUSE_OBJS) $(VMMOUSE_LIBS) | $(BUILD_DIR)
 	$(LLD) $(LDFLAGS_SYS) $^ /out:$@
-	python3 tools/pechecksum.py $@
 
 $(INSTALLER): $(INSTDRV_OBJS) $(INSTDRV_LIBS) | $(BUILD_DIR)
 	$(LLD) $(LDFLAGS_EXE) $^ /out:$@
-	python3 tools/pechecksum.py $@
 
 $(ISO_ROOT)/VMMOUSE.SYS: $(TARGET) | $(ISO_ROOT)
 	cp $< $@
