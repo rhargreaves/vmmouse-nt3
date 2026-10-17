@@ -3,6 +3,7 @@ LLD = lld-link
 DLLTOOL = llvm-dlltool
 GENISOIMAGE = genisoimage
 CLANG_FORMAT = clang-format
+NT_VERSION = 3.10
 
 CFLAGS = -target i686-pc-windows-msvc \
          -march=i486 -m32 \
@@ -16,7 +17,7 @@ CFLAGS = -target i686-pc-windows-msvc \
          -Wno-unused-parameter
 
 LDFLAGS_SYS = /nologo \
-              /subsystem:native,3.51 \
+              /subsystem:native,$(NT_VERSION) \
               /entry:DriverEntry \
               /driver \
               /base:0x10000 \
@@ -24,16 +25,16 @@ LDFLAGS_SYS = /nologo \
               /filealign:32 \
               /tsaware:no \
               /nodefaultlib \
-              /version:3.51 \
+              /version:$(NT_VERSION) \
               /dynamicbase:no \
               /nxcompat:no
 
 LDFLAGS_EXE = /nologo \
-              /subsystem:console,3.51 \
+              /subsystem:console,$(NT_VERSION) \
               /entry:mainCRTStartup \
               /base:0x400000 \
               /nodefaultlib \
-              /version:3.51 \
+              /version:$(NT_VERSION) \
               /dynamicbase:no \
               /nxcompat:no
 
