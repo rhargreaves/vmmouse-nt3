@@ -10,15 +10,17 @@ Using Docker:
 make docker-build
 ```
 
-## Installation
+## Install
 
-Mount `build/vmmouse.iso` on your VM:
+Mount `build/vmmouse.iso`:
 
 1. Run `D:\INSTALL.BAT` (or `D:\INSTDRV.EXE`)
 2. Reboot
 
 To uninstall:
-Run `D:\UNINSTALL.BAT` (or `D:\INSTDRV.EXE /u`).
+
+1. Run `D:\UNINSTALL.BAT` (or `D:\INSTDRV.EXE /u`).
+2. Reboot
 
 ## Testing
 

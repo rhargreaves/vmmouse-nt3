@@ -9,5 +9,6 @@ EXPORTS
     GetModuleFileNameA@12
     GetStdHandle@4
     GetWindowsDirectoryA@8
+    MoveFileExA@12
     SetFileAttributesA@8
     WriteFile@20

@@ -2,9 +2,7 @@ NAME advapi32.dll
 EXPORTS
     ChangeServiceConfigA@44
     CloseServiceHandle@4
-    ControlService@12
     CreateServiceA@52
     DeleteService@4
     OpenSCManagerA@12
     OpenServiceA@12
-    StartServiceA@12

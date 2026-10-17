@@ -5,17 +5,6 @@
 #define SERVICE_SYSTEM_START 0x00000001
 #define SERVICE_ERROR_NORMAL 0x00000001
 #define SERVICE_NO_CHANGE 0xFFFFFFFF
-#define SERVICE_CONTROL_STOP 0x00000001
-
-typedef struct _SERVICE_STATUS {
-    unsigned long dwServiceType;
-    unsigned long dwCurrentState;
-    unsigned long dwControlsAccepted;
-    unsigned long dwWin32ExitCode;
-    unsigned long dwServiceSpecificExitCode;
-    unsigned long dwCheckPoint;
-    unsigned long dwWaitHint;
-} SERVICE_STATUS;
 
 extern void *__stdcall GetStdHandle(unsigned long nStdHandle);
 extern int __stdcall WriteFile(void *hFile, const void *lpBuffer,
@@ -27,6 +16,9 @@ extern int __stdcall CopyFileA(const char *lpExistingFileName,
                               const char *lpNewFileName,
                               int bFailIfExists);
 extern int __stdcall DeleteFileA(const char *lpFileName);
+extern int __stdcall MoveFileExA(const char *lpExistingFileName,
+                                 const char *lpNewFileName,
+                                 unsigned long dwFlags);
 extern int __stdcall SetFileAttributesA(const char *lpFileName, unsigned long dwFileAttributes);
 extern char *__stdcall GetCommandLineA(void);
 extern unsigned long __stdcall GetLastError(void);
@@ -71,13 +63,7 @@ extern int __stdcall ChangeServiceConfigA(void *hService,
                                          const char *lpServiceStartName,
                                          const char *lpPassword,
                                          const char *lpDisplayName);
-extern int __stdcall ControlService(void *hService,
-                                   unsigned long dwControl,
-                                   SERVICE_STATUS *lpServiceStatus);
 extern int __stdcall DeleteService(void *hService);
-extern int __stdcall StartServiceA(void *hService,
-                                  unsigned long dwNumServiceArgs,
-                                  const char **lpServiceArgVectors);
 extern int __stdcall CloseServiceHandle(void *hSCObject);
 
 static void print_str(const char *s) {
@@ -177,7 +163,6 @@ void __stdcall mainCRTStartup(void) {
     unsigned long wlen;
     void *scm;
     void *svc;
-    SERVICE_STATUS sstatus;
     int is_uninstall;
     char *cmdline = GetCommandLineA();
 
@@ -201,30 +186,32 @@ void __stdcall mainCRTStartup(void) {
     svc = OpenServiceA(scm, "vmmouse", SERVICE_ALL_ACCESS);
 
     if (is_uninstall) {
-        print_str("Uninstalling vmmouse service...\r\n");
+        print_str("Uninstalling VMMouse for NT 3.x...\r\n");
         if (svc) {
-            ControlService(svc, SERVICE_CONTROL_STOP, &sstatus);
             if (DeleteService(svc)) {
-                print_str("Service deleted successfully.\r\n");
+                print_str("Service marked for deletion.\r\n");
             } else {
                 unsigned long err = GetLastError();
-                print_error("DeleteService failed", err);
+                if (err == 1072) {
+                    print_str("Service is already marked for deletion.\r\n");
+                } else {
+                    print_error("DeleteService failed", err);
+                }
             }
             CloseServiceHandle(svc);
         } else {
             print_str("Service not found.\r\n");
         }
-        DeleteFileA(dst);
-        print_str("Uninstall complete.\r\n");
+        SetFileAttributesA(dst, 0x80);
+        if (!DeleteFileA(dst)) {
+            MoveFileExA(dst, 0, 4);
+        }
+        print_str("Uninstall complete. Restart Windows NT to restore standard PS/2 mouse.\r\n");
         CloseServiceHandle(scm);
         ExitProcess(0);
     }
 
     print_str("Installing VMMouse for NT 3.x...\r\n");
-
-    if (svc) {
-        ControlService(svc, SERVICE_CONTROL_STOP, &sstatus);
-    }
 
     build_driver_path(windir, wlen, "vmmouse2.sys", cleanup);
     SetFileAttributesA(cleanup, 0x80); DeleteFileA(cleanup);
@@ -278,17 +265,15 @@ void __stdcall mainCRTStartup(void) {
     }
 
     if (svc) {
-        print_str("Starting vmmouse service...\r\n");
-        if (StartServiceA(svc, 0, 0)) {
-            print_str("SUCCESS: Installed! Restart Windows NT to activate.\r\n");
-        } else {
-            unsigned long err = GetLastError();
-            print_error("StartService failed", err);
-        }
+        print_str("SUCCESS: Installation complete!\r\n");
+        print_str("Restart Windows NT to activate VMMouse.\r\n");
         CloseServiceHandle(svc);
     } else {
         unsigned long err = GetLastError();
         print_error("Error: Could not configure service", err);
+        if (err == 1072) {
+            print_str("Note: Reboot required before service can be reinstalled.\r\n");
+        }
     }
 
     CloseServiceHandle(scm);
