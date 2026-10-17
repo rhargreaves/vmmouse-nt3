@@ -196,7 +196,7 @@ void __stdcall mainCRTStartup(void) {
         ExitProcess(0);
     }
 
-    print_str("Installing Virtual Machine Absolute Pointer Driver...\r\n");
+    print_str("Installing VMMouse for NT 3.x...\r\n");
 
     if (svc) {
         ControlService(svc, SERVICE_CONTROL_STOP, &sstatus);
@@ -232,7 +232,7 @@ void __stdcall mainCRTStartup(void) {
         svc = CreateServiceA(
             scm,
             "vmmouse",
-            "Virtual Machine Absolute Pointer Driver",
+            "VMMouse for NT 3.x",
             SERVICE_ALL_ACCESS,
             SERVICE_KERNEL_DRIVER,
             SERVICE_SYSTEM_START,
@@ -250,7 +250,7 @@ void __stdcall mainCRTStartup(void) {
             "System32\\drivers\\vmmouse.sys",
             "Pointer Port",
             0, 0, 0, 0,
-            "Virtual Machine Absolute Pointer Driver"
+            "VMMouse for NT 3.x"
         );
     }
 
