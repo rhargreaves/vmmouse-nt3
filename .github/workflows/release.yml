@@ -26,12 +26,12 @@ jobs:
       - name: Lint
         run: make docker-lint
 
-      - name: Build
+      - name: Build and Test
         run: |
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            make docker-build VERSION="${GITHUB_REF_NAME#v}"
+            make docker-test VERSION="${GITHUB_REF_NAME#v}"
           else
-            make docker-build
+            make docker-test
           fi
           sudo chown -R "$(id -u):$(id -g)" build/
           cd build

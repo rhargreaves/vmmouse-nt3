@@ -145,6 +145,10 @@ lint:
 	$(CLANG_FORMAT) --dry-run --Werror $(ALL_C_FILES)
 .PHONY: lint
 
+test: all
+	pytest -v --build-version $(VERSION)
+.PHONY: test
+
 DOCKER_IMAGE = vmmouse-builder
 
 docker-image:
@@ -162,6 +166,10 @@ docker-format: docker-image
 docker-lint: docker-image
 	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make lint VERSION=$(VERSION)
 .PHONY: docker-lint
+
+docker-test: docker-image
+	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make clean test VERSION=$(VERSION)
+.PHONY: docker-test
 
 clean:
 	rm -rf $(BUILD_DIR)
