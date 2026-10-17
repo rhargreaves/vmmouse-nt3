@@ -1,10 +1,21 @@
 CC = clang
 LLD = lld-link
 DLLTOOL = llvm-dlltool
+RC = llvm-rc
 GENISOIMAGE = genisoimage
 CLANG_FORMAT = clang-format
 NT_VERSION = 3.10
 VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+ifeq ($(strip $(VERSION)),)
+  $(error VERSION is not set or empty)
+endif
+
+VERSION_PARTS = $(subst ., ,$(VERSION))
+VERSION_MAJOR = $(or $(word 1,$(VERSION_PARTS)),1)
+VERSION_MINOR = $(or $(word 2,$(VERSION_PARTS)),0)
+VERSION_PATCH = $(or $(word 3,$(VERSION_PARTS)),0)
+RC_VERSION = $(VERSION_MAJOR),$(VERSION_MINOR),$(VERSION_PATCH),0
+IMAGE_VERSION = $(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFLAGS = -target i686-pc-windows-msvc \
          -march=i486 -m32 \
@@ -25,7 +36,7 @@ LDFLAGS_SYS = /nologo \
               /align:32 \
               /filealign:32 \
               /nodefaultlib \
-              /version:$(NT_VERSION) \
+              /version:$(IMAGE_VERSION) \
               /dynamicbase:no \
               /nxcompat:no \
               /safeseh:no \
@@ -37,7 +48,7 @@ LDFLAGS_EXE = /nologo \
               /entry:mainCRTStartup \
               /base:0x400000 \
               /nodefaultlib \
-              /version:$(NT_VERSION) \
+              /version:$(IMAGE_VERSION) \
               /dynamicbase:no \
               /nxcompat:no \
               /safeseh:no \
@@ -61,10 +72,12 @@ ALL_C_FILES = $(C_SOURCES) $(C_HEADERS)
 INSTDRV_SRCS = $(wildcard instdrv/src/*.c)
 INSTDRV_OBJS = $(patsubst instdrv/src/%.c,$(INSTDRV_BUILD_DIR)/%.obj,$(INSTDRV_SRCS))
 INSTDRV_LIBS = $(INSTDRV_BUILD_DIR)/kernel32.lib $(INSTDRV_BUILD_DIR)/advapi32.lib
+INSTDRV_RES = $(INSTDRV_BUILD_DIR)/instdrv.res
 
 VMMOUSE_SRCS = $(wildcard vmmouse/src/*.c)
 VMMOUSE_OBJS = $(patsubst vmmouse/src/%.c,$(VMMOUSE_BUILD_DIR)/%.obj,$(VMMOUSE_SRCS))
 VMMOUSE_LIBS = $(VMMOUSE_BUILD_DIR)/ntoskrnl.lib
+VMMOUSE_RES = $(VMMOUSE_BUILD_DIR)/vmmouse.res
 
 ISO_SCRIPTS = $(patsubst scripts/%.BAT,$(ISO_ROOT)/%.BAT,$(wildcard scripts/*.BAT))
 ISO_FILES = $(ISO_ROOT)/VMMOUSE.SYS \
@@ -85,16 +98,22 @@ $(INSTDRV_BUILD_DIR)/%.obj: instdrv/src/%.c | $(INSTDRV_BUILD_DIR)
 $(INSTDRV_BUILD_DIR)/%.lib: instdrv/lib/%.def | $(INSTDRV_BUILD_DIR)
 	$(DLLTOOL) -k -m i386 -d $< -l $@
 
+$(INSTDRV_BUILD_DIR)/%.res: instdrv/res/%.rc | $(INSTDRV_BUILD_DIR)
+	$(RC) /fo $@ /D RC_VERSION=$(RC_VERSION) /D "VERSION_STR=\"$(VERSION)\"" $<
+
 $(VMMOUSE_BUILD_DIR)/%.obj: vmmouse/src/%.c | $(VMMOUSE_BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(VMMOUSE_BUILD_DIR)/%.lib: vmmouse/lib/%.def | $(VMMOUSE_BUILD_DIR)
 	$(DLLTOOL) -k -m i386 -d $< -l $@
 
-$(TARGET): $(VMMOUSE_OBJS) $(VMMOUSE_LIBS) | $(BUILD_DIR)
+$(VMMOUSE_BUILD_DIR)/%.res: vmmouse/res/%.rc | $(VMMOUSE_BUILD_DIR)
+	$(RC) /fo $@ /D RC_VERSION=$(RC_VERSION) /D "VERSION_STR=\"$(VERSION)\"" $<
+
+$(TARGET): $(VMMOUSE_OBJS) $(VMMOUSE_LIBS) $(VMMOUSE_RES) | $(BUILD_DIR)
 	$(LLD) $(LDFLAGS_SYS) $^ /out:$@
 
-$(INSTALLER): $(INSTDRV_OBJS) $(INSTDRV_LIBS) | $(BUILD_DIR)
+$(INSTALLER): $(INSTDRV_OBJS) $(INSTDRV_LIBS) $(INSTDRV_RES) | $(BUILD_DIR)
 	$(LLD) $(LDFLAGS_EXE) $^ /out:$@
 
 $(ISO_ROOT)/VMMOUSE.SYS: $(TARGET) | $(ISO_ROOT)
@@ -137,11 +156,11 @@ docker-build: docker-image
 .PHONY: docker-build
 
 docker-format: docker-image
-	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make format
+	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make format VERSION=$(VERSION)
 .PHONY: docker-format
 
 docker-lint: docker-image
-	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make lint
+	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make lint VERSION=$(VERSION)
 .PHONY: docker-lint
 
 clean:
