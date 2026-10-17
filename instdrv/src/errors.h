@@ -1,0 +1,12 @@
+#ifndef INSTDRV_ERRORS_H
+#define INSTDRV_ERRORS_H
+
+#define ERR_NONE 0
+#define ERR_PATH_NOT_FOUND 1
+#define ERR_SCM_OPEN 2
+#define ERR_FILE_COPY 3
+#define ERR_SERVICE_CONFIG 4
+
+#define ERR_SERVICE_MARKED_FOR_DELETE 1072L
+
+#endif

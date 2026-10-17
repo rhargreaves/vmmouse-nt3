@@ -1,6 +1,7 @@
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
+    clang-format \
     lld \
     llvm \
     make \
