@@ -3,6 +3,7 @@ EXPORTS
     CopyFileA@12
     DeleteFileA@4
     ExitProcess@4
+    FormatMessageA@28
     GetCommandLineA@0
     GetLastError@0
     GetModuleFileNameA@12

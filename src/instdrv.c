@@ -32,6 +32,13 @@ extern char *__stdcall GetCommandLineA(void);
 extern unsigned long __stdcall GetLastError(void);
 extern unsigned long __stdcall GetModuleFileNameA(void *hModule, char *lpFilename,
                                                   unsigned long nSize);
+extern unsigned long __stdcall FormatMessageA(unsigned long dwFlags,
+                                              const void *lpSource,
+                                              unsigned long dwMessageId,
+                                              unsigned long dwLanguageId,
+                                              char *lpBuffer,
+                                              unsigned long nSize,
+                                              void *Arguments);
 extern void __stdcall ExitProcess(unsigned int uExitCode);
 
 extern void *__stdcall OpenSCManagerA(const char *lpMachineName,
@@ -97,6 +104,23 @@ static void print_num(unsigned long n) {
     }
     buf[idx] = 0;
     print_str(buf);
+}
+
+static void print_error(const char *prefix, unsigned long err) {
+    char msg[256];
+    unsigned long len;
+
+    print_str(prefix);
+    print_str(" (error ");
+    print_num(err);
+    print_str("): ");
+
+    len = FormatMessageA(0x00001200, 0, err, 0, msg, sizeof(msg), 0);
+    if (len > 0) {
+        print_str(msg);
+    } else {
+        print_str("Unknown error.\r\n");
+    }
 }
 
 static int str_contains_u(const char *s) {
@@ -169,7 +193,8 @@ void __stdcall mainCRTStartup(void) {
 
     scm = OpenSCManagerA(0, 0, SC_MANAGER_ALL_ACCESS);
     if (!scm) {
-        print_str("Error: OpenSCManager failed.\r\n");
+        unsigned long err = GetLastError();
+        print_error("Error: OpenSCManager failed", err);
         ExitProcess(2);
     }
 
@@ -182,9 +207,8 @@ void __stdcall mainCRTStartup(void) {
             if (DeleteService(svc)) {
                 print_str("Service deleted successfully.\r\n");
             } else {
-                print_str("DeleteService error: ");
-                print_num(GetLastError());
-                print_str("\r\n");
+                unsigned long err = GetLastError();
+                print_error("DeleteService failed", err);
             }
             CloseServiceHandle(svc);
         } else {
@@ -218,9 +242,8 @@ void __stdcall mainCRTStartup(void) {
 
     SetFileAttributesA(dst, 0x80);
     if (!CopyFileA(src, dst, 0)) {
-        print_str("CopyFile error: ");
-        print_num(GetLastError());
-        print_str("\r\n");
+        unsigned long err = GetLastError();
+        print_error("CopyFile failed", err);
         if (svc) CloseServiceHandle(svc);
         CloseServiceHandle(scm);
         ExitProcess(3);
@@ -257,15 +280,15 @@ void __stdcall mainCRTStartup(void) {
     if (svc) {
         print_str("Starting vmmouse service...\r\n");
         if (StartServiceA(svc, 0, 0)) {
-            print_str("SUCCESS: vmmouse service started!\r\n");
+            print_str("SUCCESS: Installed! Restart Windows NT to activate.\r\n");
         } else {
-            print_str("StartService result: ");
-            print_num(GetLastError());
-            print_str("\r\n");
+            unsigned long err = GetLastError();
+            print_error("StartService failed", err);
         }
         CloseServiceHandle(svc);
     } else {
-        print_str("Error: Could not configure service.\r\n");
+        unsigned long err = GetLastError();
+        print_error("Error: Could not configure service", err);
     }
 
     CloseServiceHandle(scm);
