@@ -1,6 +1,6 @@
-# vmmouse-nt3
+# VMMouse for NT 3.x
 
-Mouse integration driver for Windows NT 3.51 (x86) running in QEMU / VMware.
+QEMU/VMware mouse integration driver for Windows NT 3.x
 
 ## Build
 
@@ -9,12 +9,6 @@ Using Docker:
 ```bash
 make docker-build
 ```
-
-Outputs in `build/`:
-
-- `vmmouse.sys`: The driver
-- `instdrv.exe`: Installer / uninstaller
-- `vmmouse.iso`: CD-ROM image
 
 ## Installation
 
@@ -26,3 +20,6 @@ Mount `build/vmmouse.iso` on your VM:
 To uninstall:
 Run `D:\UNINSTALL.BAT` (or `D:\INSTDRV.EXE /u`).
 
+## Testing
+
+Only confirmed working on NT 3.51 SP5 (Intel)
