@@ -5,3 +5,6 @@ build/
 *.exp
 *.exe
 .DS_Store
+__pycache__/
+*.pyc
+deploy/

@@ -1,0 +1,12 @@
+NAME kernel32.dll
+EXPORTS
+    CopyFileA@12
+    DeleteFileA@4
+    ExitProcess@4
+    GetCommandLineA@0
+    GetLastError@0
+    GetModuleFileNameA@12
+    GetStdHandle@4
+    GetWindowsDirectoryA@8
+    SetFileAttributesA@8
+    WriteFile@20

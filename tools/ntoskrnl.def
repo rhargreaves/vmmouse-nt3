@@ -8,4 +8,6 @@ EXPORTS
     KeInitializeDpc@12
     KeInitializeTimer@4
     KeSetTimer@16
+    RtlDeleteRegistryValue@12
     RtlInitUnicodeString@8
+    RtlWriteRegistryValue@24

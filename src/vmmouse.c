@@ -4,6 +4,7 @@
 typedef long NTSTATUS;
 #define STATUS_SUCCESS                   ((NTSTATUS)0x00000000L)
 #define STATUS_UNSUCCESSFUL              ((NTSTATUS)0xC0000001L)
+#define STATUS_INVALID_PARAMETER         ((NTSTATUS)0xC000000DL)
 #define STATUS_INSUFFICIENT_RESOURCES    ((NTSTATUS)0xC000009AL)
 #define STATUS_INVALID_DEVICE_REQUEST    ((NTSTATUS)0xC0000010L)
 
@@ -199,10 +200,20 @@ typedef struct _DEVICE_EXTENSION {
     KDPC PollDpc;
     unsigned short PreviousButtons;
     int Enabled;
+    UNICODE_STRING DeviceName;
 } DEVICE_EXTENSION, *PDEVICE_EXTENSION;
 
 extern void __stdcall RtlInitUnicodeString(PUNICODE_STRING DestinationString,
                                           const wchar_t *SourceString);
+extern NTSTATUS __stdcall RtlWriteRegistryValue(unsigned long RelativeTo,
+                                               const wchar_t *Path,
+                                               const wchar_t *ValueName,
+                                               unsigned long ValueType,
+                                               void *ValueData,
+                                               unsigned long ValueLength);
+extern NTSTATUS __stdcall RtlDeleteRegistryValue(unsigned long RelativeTo,
+                                                const wchar_t *Path,
+                                                const wchar_t *ValueName);
 extern NTSTATUS __stdcall IoCreateDevice(PDRIVER_OBJECT DriverObject,
                                         unsigned long DeviceExtensionSize,
                                         PUNICODE_STRING DeviceName,
@@ -364,13 +375,19 @@ static NTSTATUS __stdcall vmmouse_internal_ioctl(PDEVICE_OBJECT DeviceObject, PI
     switch (irpSp->Parameters.DeviceIoControl.IoControlCode) {
     case IOCTL_INTERNAL_MOUSE_CONNECT:
         if (irpSp->Parameters.DeviceIoControl.InputBufferLength >= sizeof(CONNECT_DATA)) {
-            PCONNECT_DATA cd = (PCONNECT_DATA)Irp->AssociatedIrp.SystemBuffer;
-            dx->ConnectData = *cd;
-            dx->Enabled = 1;
-            vmmouse_enable_absolute();
-            due.QuadPart = -100000LL;
-            KeSetTimer(&dx->PollTimer, due, &dx->PollDpc);
-            status = STATUS_SUCCESS;
+            PCONNECT_DATA cd = (PCONNECT_DATA)irpSp->Parameters.DeviceIoControl.Type3InputBuffer;
+            if (!cd)
+                cd = (PCONNECT_DATA)Irp->AssociatedIrp.SystemBuffer;
+            if (cd && cd->ClassService) {
+                dx->ConnectData = *cd;
+                dx->Enabled = 1;
+                vmmouse_enable_absolute();
+                due.QuadPart = -100000LL;
+                KeSetTimer(&dx->PollTimer, due, &dx->PollDpc);
+                status = STATUS_SUCCESS;
+            } else {
+                status = STATUS_INVALID_PARAMETER;
+            }
         } else {
             status = STATUS_INSUFFICIENT_RESOURCES;
         }
@@ -409,6 +426,7 @@ static void __stdcall vmmouse_unload(PDRIVER_OBJECT DriverObject) {
         dx->Enabled = 0;
         KeCancelTimer(&dx->PollTimer);
         vmmouse_disable();
+        RtlDeleteRegistryValue(4, L"PointerPort", dx->DeviceName.Buffer);
         IoDeleteDevice(dev_obj);
     }
 }
@@ -446,6 +464,11 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
     dx->DeviceObject = dev_obj;
     dx->Enabled = 0;
     dx->PreviousButtons = 0;
+    dx->DeviceName = dev_name;
+
+    RtlWriteRegistryValue(4, L"PointerPort", dev_name.Buffer, 1,
+                          RegistryPath->Buffer,
+                          RegistryPath->Length + sizeof(wchar_t));
 
     KeInitializeTimer(&dx->PollTimer);
     KeInitializeDpc(&dx->PollDpc, vmmouse_poll_dpc, dx);
