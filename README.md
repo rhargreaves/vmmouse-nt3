@@ -14,14 +14,14 @@ make docker-build
 
 ## Install
 
-Mount `build/vmmouse.iso`:
+Mount `build/vmmouse.iso` in your virtual CD drive (e.g. `D:`):
 
-1. Run `D:\INSTALL.BAT` (or `D:\INSTDRV.EXE`)
+1. Run `D:\INSTALL.BAT`
 2. Reboot
 
 To uninstall:
 
-1. Run `D:\UNINSTALL.BAT` (or `D:\INSTDRV.EXE /u`).
+1. Run `D:\UNINSTALL.BAT`
 2. Reboot
 
 ## Testing
