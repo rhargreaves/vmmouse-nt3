@@ -4,6 +4,7 @@ DLLTOOL = llvm-dlltool
 GENISOIMAGE = genisoimage
 CLANG_FORMAT = clang-format
 NT_VERSION = 3.10
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 
 CFLAGS = -target i686-pc-windows-msvc \
          -march=i486 -m32 \
@@ -51,6 +52,7 @@ ISO_ROOT = $(BUILD_DIR)/iso_root
 TARGET = $(BUILD_DIR)/vmmouse.sys
 INSTALLER = $(BUILD_DIR)/instdrv.exe
 ISO = $(BUILD_DIR)/vmmouse.iso
+VERSIONED_ISO = $(BUILD_DIR)/vmmouse-$(VERSION).iso
 
 C_SOURCES = $(wildcard instdrv/src/*.c vmmouse/src/*.c)
 C_HEADERS = $(wildcard instdrv/src/*.h vmmouse/src/*.h)
@@ -67,9 +69,11 @@ VMMOUSE_LIBS = $(VMMOUSE_BUILD_DIR)/ntoskrnl.lib
 ISO_SCRIPTS = $(patsubst scripts/%.BAT,$(ISO_ROOT)/%.BAT,$(wildcard scripts/*.BAT))
 ISO_FILES = $(ISO_ROOT)/VMMOUSE.SYS \
             $(ISO_ROOT)/INSTDRV.EXE \
+            $(ISO_ROOT)/README.TXT \
+            $(ISO_ROOT)/LICENSE.TXT \
             $(ISO_SCRIPTS)
 
-all: $(ISO)
+all: $(ISO) $(VERSIONED_ISO)
 .PHONY: all
 
 $(BUILD_DIR) $(INSTDRV_BUILD_DIR) $(VMMOUSE_BUILD_DIR) $(ISO_ROOT):
@@ -99,11 +103,20 @@ $(ISO_ROOT)/VMMOUSE.SYS: $(TARGET) | $(ISO_ROOT)
 $(ISO_ROOT)/INSTDRV.EXE: $(INSTALLER) | $(ISO_ROOT)
 	cp $< $@
 
+$(ISO_ROOT)/README.TXT: scripts/README.TXT | $(ISO_ROOT)
+	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/\r*$$/\r/' $< > $@
+
+$(ISO_ROOT)/LICENSE.TXT: LICENSE | $(ISO_ROOT)
+	sed 's/\r*$$/\r/' $< > $@
+
 $(ISO_ROOT)/%.BAT: scripts/%.BAT | $(ISO_ROOT)
 	sed 's/\r*$$/\r/' $< > $@
 
 $(ISO): $(ISO_FILES)
 	$(GENISOIMAGE) -o $@ -V "VMMOUSE" -iso-level 2 -R $(ISO_ROOT)
+
+$(VERSIONED_ISO): $(ISO)
+	cp $< $@
 
 format:
 	$(CLANG_FORMAT) -i $(ALL_C_FILES)
@@ -120,7 +133,7 @@ docker-image:
 .PHONY: docker-image
 
 docker-build: docker-image
-	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make clean all
+	docker run --rm -v $(CURDIR):/build -w /build $(DOCKER_IMAGE) make clean all VERSION=$(VERSION)
 .PHONY: docker-build
 
 docker-format: docker-image

@@ -28,10 +28,14 @@ jobs:
 
       - name: Build
         run: |
-          make docker-build
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            make docker-build VERSION="${GITHUB_REF_NAME#v}"
+          else
+            make docker-build
+          fi
           sudo chown -R "$(id -u):$(id -g)" build/
           cd build
-          sha256sum vmmouse.iso vmmouse.sys instdrv.exe > SHA256SUMS.txt
+          sha256sum vmmouse-*.iso vmmouse.sys instdrv.exe > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Upload build artifacts
@@ -39,7 +43,7 @@ jobs:
         with:
           name: vmmouse-artifacts
           path: |
-            build/vmmouse.iso
+            build/vmmouse*.iso
             build/vmmouse.sys
             build/instdrv.exe
             build/SHA256SUMS.txt
@@ -50,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/vmmouse.iso
+            build/vmmouse-*.iso
             build/vmmouse.sys
             build/instdrv.exe
             build/SHA256SUMS.txt

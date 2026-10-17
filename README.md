@@ -27,3 +27,7 @@ To uninstall:
 ## Testing
 
 Only confirmed working on NT 3.51 SP5 (Intel)
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
