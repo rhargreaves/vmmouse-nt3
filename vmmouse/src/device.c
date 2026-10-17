@@ -3,7 +3,7 @@
 
 static const wchar_t g_pointer_port[] = L"PointerPort";
 
-void __stdcall vmmouse_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, void *SysArg2) {
+void __stdcall device_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, void *SysArg2) {
     PDEVICE_EXTENSION dx = (PDEVICE_EXTENSION)DeferredContext;
     MOUSE_INPUT_DATA mid;
     unsigned long consumed;
@@ -55,7 +55,7 @@ void __stdcall vmmouse_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1,
     }
 }
 
-NTSTATUS __stdcall vmmouse_create_close(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
+NTSTATUS __stdcall device_create_close(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
     (void)DeviceObject;
     Irp->IoStatus.Status = STATUS_SUCCESS;
     Irp->IoStatus.Information = 0;
@@ -63,7 +63,7 @@ NTSTATUS __stdcall vmmouse_create_close(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
     return STATUS_SUCCESS;
 }
 
-NTSTATUS __stdcall vmmouse_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
+NTSTATUS __stdcall device_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
     PDEVICE_EXTENSION dx = (PDEVICE_EXTENSION)DeviceObject->DeviceExtension;
     PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
     NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
@@ -116,7 +116,7 @@ NTSTATUS __stdcall vmmouse_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     return status;
 }
 
-void __stdcall vmmouse_unload(PDRIVER_OBJECT DriverObject) {
+void __stdcall device_unload(PDRIVER_OBJECT DriverObject) {
     PDEVICE_OBJECT dev_obj = DriverObject->DeviceObject;
     if (dev_obj) {
         PDEVICE_EXTENSION dx = (PDEVICE_EXTENSION)dev_obj->DeviceExtension;

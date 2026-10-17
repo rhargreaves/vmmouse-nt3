@@ -14,9 +14,9 @@ typedef struct _DEVICE_EXTENSION {
     UNICODE_STRING DeviceName;
 } DEVICE_EXTENSION, *PDEVICE_EXTENSION;
 
-void __stdcall vmmouse_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, void *SysArg2);
-NTSTATUS __stdcall vmmouse_create_close(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-NTSTATUS __stdcall vmmouse_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-void __stdcall vmmouse_unload(PDRIVER_OBJECT DriverObject);
+void __stdcall device_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, void *SysArg2);
+NTSTATUS __stdcall device_create_close(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS __stdcall device_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+void __stdcall device_unload(PDRIVER_OBJECT DriverObject);
 
 #endif

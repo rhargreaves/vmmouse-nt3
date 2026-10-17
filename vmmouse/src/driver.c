@@ -38,12 +38,12 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
                           RegistryPath->Length + sizeof(wchar_t));
 
     KeInitializeTimer(&dx->PollTimer);
-    KeInitializeDpc(&dx->PollDpc, vmmouse_poll_dpc, dx);
+    KeInitializeDpc(&dx->PollDpc, device_poll_dpc, dx);
 
-    DriverObject->MajorFunction[IRP_MJ_CREATE] = vmmouse_create_close;
-    DriverObject->MajorFunction[IRP_MJ_CLOSE] = vmmouse_create_close;
-    DriverObject->MajorFunction[IRP_MJ_INTERNAL_DEVICE_CONTROL] = vmmouse_internal_ioctl;
-    DriverObject->DriverUnload = vmmouse_unload;
+    DriverObject->MajorFunction[IRP_MJ_CREATE] = device_create_close;
+    DriverObject->MajorFunction[IRP_MJ_CLOSE] = device_create_close;
+    DriverObject->MajorFunction[IRP_MJ_INTERNAL_DEVICE_CONTROL] = device_internal_ioctl;
+    DriverObject->DriverUnload = device_unload;
 
     return STATUS_SUCCESS;
 }
