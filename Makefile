@@ -8,7 +8,7 @@ CFLAGS = -target i686-pc-windows-msvc \
          -ffreestanding -fno-builtin \
          -fno-stack-protector \
          -mno-sse -mno-sse2 \
-         -I./include \
+         -Ivmmouse/src \
          -O2 -Wall
 
 LDFLAGS_SYS = /nologo \
@@ -44,20 +44,20 @@ all: $(ISO)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/ntoskrnl.lib: tools/ntoskrnl.def | $(BUILD_DIR)
-	$(DLLTOOL) -k -m i386 -d tools/ntoskrnl.def -l $(BUILD_DIR)/ntoskrnl.lib
+$(BUILD_DIR)/ntoskrnl.lib: vmmouse/lib/ntoskrnl.def | $(BUILD_DIR)
+	$(DLLTOOL) -k -m i386 -d vmmouse/lib/ntoskrnl.def -l $(BUILD_DIR)/ntoskrnl.lib
 
-$(BUILD_DIR)/kernel32.lib: tools/kernel32.def | $(BUILD_DIR)
-	$(DLLTOOL) -k -m i386 -d tools/kernel32.def -l $(BUILD_DIR)/kernel32.lib
+$(BUILD_DIR)/kernel32.lib: instdrv/lib/kernel32.def | $(BUILD_DIR)
+	$(DLLTOOL) -k -m i386 -d instdrv/lib/kernel32.def -l $(BUILD_DIR)/kernel32.lib
 
-$(BUILD_DIR)/advapi32.lib: tools/advapi32.def | $(BUILD_DIR)
-	$(DLLTOOL) -k -m i386 -d tools/advapi32.def -l $(BUILD_DIR)/advapi32.lib
+$(BUILD_DIR)/advapi32.lib: instdrv/lib/advapi32.def | $(BUILD_DIR)
+	$(DLLTOOL) -k -m i386 -d instdrv/lib/advapi32.def -l $(BUILD_DIR)/advapi32.lib
 
-$(BUILD_DIR)/vmmouse.obj: src/vmmouse.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c src/vmmouse.c -o $(BUILD_DIR)/vmmouse.obj
+$(BUILD_DIR)/vmmouse.obj: vmmouse/src/vmmouse.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c vmmouse/src/vmmouse.c -o $(BUILD_DIR)/vmmouse.obj
 
-$(BUILD_DIR)/instdrv.obj: src/instdrv.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c src/instdrv.c -o $(BUILD_DIR)/instdrv.obj
+$(BUILD_DIR)/instdrv.obj: instdrv/src/main.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c instdrv/src/main.c -o $(BUILD_DIR)/instdrv.obj
 
 $(TARGET): $(BUILD_DIR)/vmmouse.obj $(BUILD_DIR)/ntoskrnl.lib
 	$(LLD) $(LDFLAGS_SYS) $(BUILD_DIR)/vmmouse.obj $(BUILD_DIR)/ntoskrnl.lib /out:$(TARGET)
@@ -68,13 +68,27 @@ $(INSTALLER): $(BUILD_DIR)/instdrv.obj $(BUILD_DIR)/kernel32.lib $(BUILD_DIR)/ad
 	    $(BUILD_DIR)/advapi32.lib /out:$(INSTALLER)
 	python3 tools/pechecksum.py $(INSTALLER)
 
-$(ISO): $(TARGET) $(INSTALLER)
-	rm -rf $(ISO_ROOT)
+$(ISO_ROOT):
 	mkdir -p $(ISO_ROOT)
-	cp $(TARGET) $(ISO_ROOT)/VMMOUSE.SYS
-	cp $(INSTALLER) $(ISO_ROOT)/INSTDRV.EXE
-	printf '@echo off\r\nD:\r\nINSTDRV.EXE\r\npause\r\n' > $(ISO_ROOT)/INSTALL.BAT
-	printf '@echo off\r\nD:\r\nINSTDRV.EXE /u\r\npause\r\n' > $(ISO_ROOT)/UNINSTALL.BAT
+
+$(ISO_ROOT)/VMMOUSE.SYS: $(TARGET) | $(ISO_ROOT)
+	cp $< $@
+
+$(ISO_ROOT)/INSTDRV.EXE: $(INSTALLER) | $(ISO_ROOT)
+	cp $< $@
+
+$(ISO_ROOT)/INSTALL.BAT: scripts/INSTALL.BAT | $(ISO_ROOT)
+	sed 's/\r*$$/\r/' $< > $@
+
+$(ISO_ROOT)/UNINSTALL.BAT: scripts/UNINSTALL.BAT | $(ISO_ROOT)
+	sed 's/\r*$$/\r/' $< > $@
+
+ISO_FILES = $(ISO_ROOT)/VMMOUSE.SYS \
+            $(ISO_ROOT)/INSTDRV.EXE \
+            $(ISO_ROOT)/INSTALL.BAT \
+            $(ISO_ROOT)/UNINSTALL.BAT
+
+$(ISO): $(ISO_FILES)
 	$(GENISOIMAGE) -o $(ISO) -V "VMMOUSE" -iso-level 2 -R $(ISO_ROOT)
 
 DOCKER_IMAGE = vmmouse-builder
