@@ -1,5 +1,7 @@
 # VMMouse for NT 3.x
 
+[![Build and Release](https://github.com/rhargreaves/vmmouse-nt3/actions/workflows/release.yml/badge.svg)](https://github.com/rhargreaves/vmmouse-nt3/actions/workflows/release.yml)
+
 QEMU/VMware mouse integration driver for Windows NT 3.x
 
 ## Build
