@@ -1,0 +1,12 @@
+NAME ntoskrnl.exe
+EXPORTS
+    DbgPrint
+    IoCompleteRequest
+    IoCreateDevice
+    IoCreateSymbolicLink
+    IoDeleteDevice
+    KeCancelTimer
+    KeInitializeDpc
+    KeInitializeTimer
+    KeSetTimerEx
+    RtlInitUnicodeString

@@ -1,0 +1,6 @@
+build/
+*.obj
+*.sys
+*.lib
+*.exp
+.DS_Store
