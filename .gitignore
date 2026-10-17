@@ -3,4 +3,5 @@ build/
 *.sys
 *.lib
 *.exp
+*.exe
 .DS_Store

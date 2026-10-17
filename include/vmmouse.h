@@ -31,28 +31,15 @@ typedef struct _VMMOUSE_REGS {
 
 static inline void vmmouse_cmd(VMMOUSE_REGS *regs) {
     __asm__ __volatile__(
-        "pushl %%ebp\n\t"
-        "pushl %%edi\n\t"
-        "pushl %%esi\n\t"
-        "movl 16(%0), %%esi\n\t"
-        "movl 20(%0), %%edi\n\t"
-        "movl 0(%0), %%eax\n\t"
-        "movl 4(%0), %%ebx\n\t"
-        "movl 8(%0), %%ecx\n\t"
-        "movl 12(%0), %%edx\n\t"
-        "inl %%dx, %%eax\n\t"
-        "movl %%eax, 0(%0)\n\t"
-        "movl %%ebx, 4(%0)\n\t"
-        "movl %%ecx, 8(%0)\n\t"
-        "movl %%edx, 12(%0)\n\t"
-        "movl %%esi, 16(%0)\n\t"
-        "movl %%edi, 20(%0)\n\t"
-        "popl %%esi\n\t"
-        "popl %%edi\n\t"
-        "popl %%ebp\n\t"
+        "inl %%dx, %%eax"
+        : "+a"(regs->eax),
+          "+b"(regs->ebx),
+          "+c"(regs->ecx),
+          "+d"(regs->edx),
+          "+S"(regs->esi),
+          "+D"(regs->edi)
         :
-        : "a"(regs)
-        : "ebx", "ecx", "edx", "memory"
+        : "memory"
     );
 }
 
