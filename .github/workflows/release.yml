@@ -22,17 +22,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Lint
         run: make docker-lint
 
       - name: Build and Test
         run: |
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            make docker-test VERSION="${GITHUB_REF_NAME#v}"
-          else
-            make docker-test
-          fi
+          make docker-test
           sudo chown -R "$(id -u):$(id -g)" build/
           cd build
           sha256sum vmmouse-*.iso vmmouse.sys instdrv.exe > SHA256SUMS.txt
