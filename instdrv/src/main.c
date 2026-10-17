@@ -6,6 +6,12 @@
 #define SERVICE_ERROR_NORMAL 0x00000001
 #define SERVICE_NO_CHANGE 0xFFFFFFFF
 
+#define SERVICE_NAME        "vmmouse"
+#define DISPLAY_NAME        "VMMouse for NT 3.x"
+#define DRIVER_FILENAME     "vmmouse.sys"
+#define DRIVER_PATH_SYS32   "System32\\drivers\\" DRIVER_FILENAME
+#define DRIVER_GROUP        "Pointer Port"
+
 extern void *__stdcall GetStdHandle(unsigned long nStdHandle);
 extern int __stdcall WriteFile(void *hFile, const void *lpBuffer,
                               unsigned long nNumberOfBytesToWrite,
@@ -135,7 +141,7 @@ static void get_source_path(char *out, unsigned long max_len) {
     unsigned long len = GetModuleFileNameA(0, mod, sizeof(mod));
     unsigned long last_slash = 0;
     unsigned long i = 0;
-    const char *fn = "vmmouse.sys";
+    const char *fn = DRIVER_FILENAME;
     unsigned long j = 0;
 
     if (len == 0 || len >= sizeof(mod)) {
@@ -159,7 +165,6 @@ void __stdcall mainCRTStartup(void) {
     char src[260];
     char windir[260];
     char dst[260];
-    char cleanup[260];
     unsigned long wlen;
     void *scm;
     void *svc;
@@ -174,7 +179,7 @@ void __stdcall mainCRTStartup(void) {
         ExitProcess(1);
     }
 
-    build_driver_path(windir, wlen, "vmmouse.sys", dst);
+    build_driver_path(windir, wlen, DRIVER_FILENAME, dst);
 
     scm = OpenSCManagerA(0, 0, SC_MANAGER_ALL_ACCESS);
     if (!scm) {
@@ -183,10 +188,10 @@ void __stdcall mainCRTStartup(void) {
         ExitProcess(2);
     }
 
-    svc = OpenServiceA(scm, "vmmouse", SERVICE_ALL_ACCESS);
+    svc = OpenServiceA(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
 
     if (is_uninstall) {
-        print_str("Uninstalling VMMouse for NT 3.x...\r\n");
+        print_str("Uninstalling " DISPLAY_NAME "...\r\n");
         if (svc) {
             if (DeleteService(svc)) {
                 print_str("Service marked for deletion.\r\n");
@@ -211,14 +216,7 @@ void __stdcall mainCRTStartup(void) {
         ExitProcess(0);
     }
 
-    print_str("Installing VMMouse for NT 3.x...\r\n");
-
-    build_driver_path(windir, wlen, "vmmouse2.sys", cleanup);
-    SetFileAttributesA(cleanup, 0x80); DeleteFileA(cleanup);
-    build_driver_path(windir, wlen, "vmmouse3.sys", cleanup);
-    SetFileAttributesA(cleanup, 0x80); DeleteFileA(cleanup);
-    build_driver_path(windir, wlen, "vmmouse4.sys", cleanup);
-    SetFileAttributesA(cleanup, 0x80); DeleteFileA(cleanup);
+    print_str("Installing " DISPLAY_NAME "...\r\n");
 
     get_source_path(src, sizeof(src));
     print_str("Copying ");
@@ -241,14 +239,14 @@ void __stdcall mainCRTStartup(void) {
     if (!svc) {
         svc = CreateServiceA(
             scm,
-            "vmmouse",
-            "VMMouse for NT 3.x",
+            SERVICE_NAME,
+            DISPLAY_NAME,
             SERVICE_ALL_ACCESS,
             SERVICE_KERNEL_DRIVER,
             SERVICE_SYSTEM_START,
             SERVICE_ERROR_NORMAL,
-            "System32\\drivers\\vmmouse.sys",
-            "Pointer Port",
+            DRIVER_PATH_SYS32,
+            DRIVER_GROUP,
             0, 0, 0, 0
         );
     } else {
@@ -257,10 +255,10 @@ void __stdcall mainCRTStartup(void) {
             SERVICE_NO_CHANGE,
             SERVICE_SYSTEM_START,
             SERVICE_ERROR_NORMAL,
-            "System32\\drivers\\vmmouse.sys",
-            "Pointer Port",
+            DRIVER_PATH_SYS32,
+            DRIVER_GROUP,
             0, 0, 0, 0,
-            "VMMouse for NT 3.x"
+            DISPLAY_NAME
         );
     }
 

@@ -419,6 +419,8 @@ static NTSTATUS __stdcall vmmouse_internal_ioctl(PDEVICE_OBJECT DeviceObject, PI
     return status;
 }
 
+static const wchar_t g_pointer_port[] = L"PointerPort";
+
 static void __stdcall vmmouse_unload(PDRIVER_OBJECT DriverObject) {
     PDEVICE_OBJECT dev_obj = DriverObject->DeviceObject;
     if (dev_obj) {
@@ -426,7 +428,7 @@ static void __stdcall vmmouse_unload(PDRIVER_OBJECT DriverObject) {
         dx->Enabled = 0;
         KeCancelTimer(&dx->PollTimer);
         vmmouse_disable();
-        RtlDeleteRegistryValue(4, L"PointerPort", dx->DeviceName.Buffer);
+        RtlDeleteRegistryValue(4, g_pointer_port, dx->DeviceName.Buffer);
         IoDeleteDevice(dev_obj);
     }
 }
@@ -466,7 +468,7 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
     dx->PreviousButtons = 0;
     dx->DeviceName = dev_name;
 
-    RtlWriteRegistryValue(4, L"PointerPort", dev_name.Buffer, 1,
+    RtlWriteRegistryValue(4, g_pointer_port, dev_name.Buffer, 1,
                           RegistryPath->Buffer,
                           RegistryPath->Length + sizeof(wchar_t));
 
