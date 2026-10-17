@@ -1,4 +1,3 @@
 @echo off
-D:
-INSTDRV.EXE /u
+%0\..\INSTDRV.EXE /u
 pause
