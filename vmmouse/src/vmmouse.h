@@ -16,9 +16,15 @@
 
 #define VMMOUSE_VERSION 0x3442554A
 
+#define VMMOUSE_PACKET_WORDS 4
+
 #define VMMOUSE_LEFT_BUTTON 0x20
 #define VMMOUSE_RIGHT_BUTTON 0x10
 #define VMMOUSE_MIDDLE_BUTTON 0x08
+
+#define VMMOUSE_BTN_LEFT 0x01
+#define VMMOUSE_BTN_RIGHT 0x02
+#define VMMOUSE_BTN_MIDDLE 0x04
 
 typedef struct _VMMOUSE_REGS {
     unsigned long eax;

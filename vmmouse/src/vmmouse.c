@@ -8,6 +8,8 @@ int vmmouse_probe(void) {
     r.ecx = VMMOUSE_CMD_GETVERSION;
     r.edx = VMWARE_PORT;
     vmmouse_cmd(&r);
+    /* On hardware without backdoor support, reading the unassigned I/O port
+     * returns floating bus state 0xFFFFFFFF, safely failing the probe. */
     if (r.eax == 0xFFFFFFFF || r.ebx != VMWARE_MAGIC)
         return 0;
 
@@ -63,22 +65,22 @@ int vmmouse_read_data(unsigned short *buttons, long *x, long *y) {
     r.edx = VMWARE_PORT;
     vmmouse_cmd(&r);
 
-    if ((r.eax & 0xFFFF) < 4)
+    if ((r.eax & 0xFFFF) < VMMOUSE_PACKET_WORDS)
         return 0;
 
     r.eax = VMWARE_MAGIC;
-    r.ebx = 4;
+    r.ebx = VMMOUSE_PACKET_WORDS;
     r.ecx = VMMOUSE_CMD_DATA;
     r.edx = VMWARE_PORT;
     vmmouse_cmd(&r);
 
     *buttons = 0;
     if (r.eax & VMMOUSE_LEFT_BUTTON)
-        *buttons |= 0x01;
+        *buttons |= VMMOUSE_BTN_LEFT;
     if (r.eax & VMMOUSE_RIGHT_BUTTON)
-        *buttons |= 0x02;
+        *buttons |= VMMOUSE_BTN_RIGHT;
     if (r.eax & VMMOUSE_MIDDLE_BUTTON)
-        *buttons |= 0x04;
+        *buttons |= VMMOUSE_BTN_MIDDLE;
 
     *x = (long)r.ebx;
     *y = (long)r.ecx;

@@ -12,6 +12,13 @@ typedef long NTSTATUS;
 #define IRP_MJ_CLOSE 0x02
 #define IRP_MJ_INTERNAL_DEVICE_CONTROL 0x0f
 
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
+#define RTL_REGISTRY_DEVICEMAP 4
+#define REG_SZ 1
+
 #define DO_BUFFERED_IO 0x00000004
 #define IO_NO_INCREMENT 0
 

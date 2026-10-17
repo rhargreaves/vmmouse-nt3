@@ -1,13 +1,11 @@
 #include "device.h"
 #include "vmmouse.h"
 
-static const wchar_t g_pointer_port[] = L"PointerPort";
-
 static const wchar_t *g_port_names[] = {L"\\Device\\PointerPort0", L"\\Device\\PointerPort1",
                                         L"\\Device\\PointerPort2", L"\\Device\\PointerPort3"};
 
 NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
-    PDEVICE_OBJECT dev_obj = 0;
+    PDEVICE_OBJECT dev_obj = NULL;
     PDEVICE_EXTENSION dx;
     UNICODE_STRING dev_name;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -16,6 +14,8 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
     if (!vmmouse_probe())
         return STATUS_UNSUCCESSFUL;
 
+    /* Try PointerPort0..3: mouclass enumerates all ports registered in
+     * DEVICEMAP\PointerPort. Probing allows coexistence with i8042prt. */
     for (i = 0; i < 4; i++) {
         RtlInitUnicodeString(&dev_name, g_port_names[i]);
         status = IoCreateDevice(DriverObject, sizeof(DEVICE_EXTENSION), &dev_name,
@@ -34,8 +34,9 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
     dx->PreviousButtons = 0;
     dx->DeviceName = dev_name;
 
-    RtlWriteRegistryValue(4, g_pointer_port, dev_name.Buffer, 1, RegistryPath->Buffer,
-                          RegistryPath->Length + sizeof(wchar_t));
+    /* ValueLength includes terminating null character for REG_SZ */
+    RtlWriteRegistryValue(RTL_REGISTRY_DEVICEMAP, g_pointer_port, dev_name.Buffer, REG_SZ,
+                          RegistryPath->Buffer, RegistryPath->Length + sizeof(wchar_t));
 
     KeInitializeTimer(&dx->PollTimer);
     KeInitializeDpc(&dx->PollDpc, device_poll_dpc, dx);

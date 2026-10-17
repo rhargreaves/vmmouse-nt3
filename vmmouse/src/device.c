@@ -1,7 +1,7 @@
 #include "device.h"
 #include "vmmouse.h"
 
-static const wchar_t g_pointer_port[] = L"PointerPort";
+const wchar_t g_pointer_port[] = L"PointerPort";
 
 void __stdcall device_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, void *SysArg2) {
     PDEVICE_EXTENSION dx = (PDEVICE_EXTENSION)DeferredContext;
@@ -22,21 +22,23 @@ void __stdcall device_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, 
 
     while (vmmouse_read_data(&cur_btns, &x, &y)) {
         btn_flags = 0;
-        if ((cur_btns & 0x01) && !(dx->PreviousButtons & 0x01))
+        if ((cur_btns & VMMOUSE_BTN_LEFT) && !(dx->PreviousButtons & VMMOUSE_BTN_LEFT))
             btn_flags |= MOUSE_LEFT_BUTTON_DOWN;
-        if (!(cur_btns & 0x01) && (dx->PreviousButtons & 0x01))
+        if (!(cur_btns & VMMOUSE_BTN_LEFT) && (dx->PreviousButtons & VMMOUSE_BTN_LEFT))
             btn_flags |= MOUSE_LEFT_BUTTON_UP;
-        if ((cur_btns & 0x02) && !(dx->PreviousButtons & 0x02))
+        if ((cur_btns & VMMOUSE_BTN_RIGHT) && !(dx->PreviousButtons & VMMOUSE_BTN_RIGHT))
             btn_flags |= MOUSE_RIGHT_BUTTON_DOWN;
-        if (!(cur_btns & 0x02) && (dx->PreviousButtons & 0x02))
+        if (!(cur_btns & VMMOUSE_BTN_RIGHT) && (dx->PreviousButtons & VMMOUSE_BTN_RIGHT))
             btn_flags |= MOUSE_RIGHT_BUTTON_UP;
-        if ((cur_btns & 0x04) && !(dx->PreviousButtons & 0x04))
+        if ((cur_btns & VMMOUSE_BTN_MIDDLE) && !(dx->PreviousButtons & VMMOUSE_BTN_MIDDLE))
             btn_flags |= MOUSE_MIDDLE_BUTTON_DOWN;
-        if (!(cur_btns & 0x04) && (dx->PreviousButtons & 0x04))
+        if (!(cur_btns & VMMOUSE_BTN_MIDDLE) && (dx->PreviousButtons & VMMOUSE_BTN_MIDDLE))
             btn_flags |= MOUSE_MIDDLE_BUTTON_UP;
 
         dx->PreviousButtons = cur_btns;
 
+        /* VMMouse returns normalized coordinates in range [0, 65535],
+         * matching the MOUSE_MOVE_ABSOLUTE coordinate space directly. */
         mid.UnitId = 0;
         mid.Flags = MOUSE_MOVE_ABSOLUTE;
         mid.ButtonFlags = btn_flags;
@@ -50,7 +52,7 @@ void __stdcall device_poll_dpc(PKDPC Dpc, void *DeferredContext, void *SysArg1, 
     }
 
     if (dx->Enabled) {
-        due.QuadPart = -100000LL;
+        due.QuadPart = MOUSE_POLL_INTERVAL_10MS;
         KeSetTimer(&dx->PollTimer, due, &dx->PollDpc);
     }
 }
@@ -72,6 +74,8 @@ NTSTATUS __stdcall device_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp) 
     switch (irpSp->Parameters.DeviceIoControl.IoControlCode) {
     case IOCTL_INTERNAL_MOUSE_CONNECT:
         if (irpSp->Parameters.DeviceIoControl.InputBufferLength >= sizeof(CONNECT_DATA)) {
+            /* METHOD_NEITHER passes buffer in Type3InputBuffer; check
+             * AssociatedIrp.SystemBuffer for synthetic/filter-driver IRPs. */
             PCONNECT_DATA cd = (PCONNECT_DATA)irpSp->Parameters.DeviceIoControl.Type3InputBuffer;
             if (!cd)
                 cd = (PCONNECT_DATA)Irp->AssociatedIrp.SystemBuffer;
@@ -79,7 +83,7 @@ NTSTATUS __stdcall device_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp) 
                 dx->ConnectData = *cd;
                 dx->Enabled = 1;
                 vmmouse_enable_absolute();
-                due.QuadPart = -100000LL;
+                due.QuadPart = MOUSE_POLL_INTERVAL_10MS;
                 KeSetTimer(&dx->PollTimer, due, &dx->PollDpc);
                 status = STATUS_SUCCESS;
             } else {
@@ -92,7 +96,7 @@ NTSTATUS __stdcall device_internal_ioctl(PDEVICE_OBJECT DeviceObject, PIRP Irp) 
 
     case IOCTL_INTERNAL_MOUSE_ENABLE:
         dx->Enabled = 1;
-        due.QuadPart = -100000LL;
+        due.QuadPart = MOUSE_POLL_INTERVAL_10MS;
         KeSetTimer(&dx->PollTimer, due, &dx->PollDpc);
         status = STATUS_SUCCESS;
         break;
@@ -123,7 +127,7 @@ void __stdcall device_unload(PDRIVER_OBJECT DriverObject) {
         dx->Enabled = 0;
         KeCancelTimer(&dx->PollTimer);
         vmmouse_disable();
-        RtlDeleteRegistryValue(4, g_pointer_port, dx->DeviceName.Buffer);
+        RtlDeleteRegistryValue(RTL_REGISTRY_DEVICEMAP, g_pointer_port, dx->DeviceName.Buffer);
         IoDeleteDevice(dev_obj);
     }
 }

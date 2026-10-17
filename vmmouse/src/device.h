@@ -4,6 +4,11 @@
 #include "ntddmou.h"
 #include "ntos.h"
 
+/* 10ms in 100ns units (relative intervals are negative in NT) */
+#define MOUSE_POLL_INTERVAL_10MS (-100000LL)
+
+extern const wchar_t g_pointer_port[];
+
 typedef struct _DEVICE_EXTENSION {
     PDEVICE_OBJECT DeviceObject;
     CONNECT_DATA ConnectData;
