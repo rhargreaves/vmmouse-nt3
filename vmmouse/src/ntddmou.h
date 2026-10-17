@@ -1,5 +1,5 @@
-#ifndef _NT351_MOUSE_H_
-#define _NT351_MOUSE_H_
+#ifndef _NTDDMOU_H_
+#define _NTDDMOU_H_
 
 #define MOUSE_MOVE_RELATIVE 0x0000
 #define MOUSE_MOVE_ABSOLUTE 0x0001

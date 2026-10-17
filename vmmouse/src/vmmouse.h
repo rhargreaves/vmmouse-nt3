@@ -37,4 +37,9 @@ static inline void vmmouse_cmd(VMMOUSE_REGS *regs) {
                          : "memory");
 }
 
+int vmmouse_probe(void);
+void vmmouse_enable_absolute(void);
+void vmmouse_disable(void);
+int vmmouse_read_data(unsigned short *buttons, long *x, long *y);
+
 #endif
